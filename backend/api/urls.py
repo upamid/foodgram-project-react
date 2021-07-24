@@ -8,6 +8,8 @@ from .views import (
     IngredientViewSet,
     TagViewSet,
     ShoppingCartViewSet,
+    SubscribeView,
+    FavoriteViewSet
     )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -40,6 +42,8 @@ urlpatterns = [
     # path('auth/token/login/', TokenObtainSlidingView.as_view(), name='token_obtain_pair'),
     # path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('recipes/<int:recipe_id>/shopping_cart/', ShoppingCartViewSet.as_view(), name='shopping_cart'),
+    path('recipes/<int:recipe_id>/favorite/', FavoriteViewSet.as_view(), name='favorite'),
+    path('users/<int:user_id>/subscribe/', SubscribeView.as_view(), name='follow'),
     # path('auth/token/login/', TokenView.as_view()),
     path('', include(v1_router.urls)),
     

@@ -1,9 +1,10 @@
+import re
 from rest_framework import serializers
 from rest_framework.serializers import ValidationError
 from drf_extra_fields.fields import Base64ImageField
 
 
-from recipes.models import Recipe, Ingredient, IngredientAmount, Tag, TagRecipe, ShoppingCart
+from recipes.models import Recipe, Ingredient, IngredientAmount, Tag, TagRecipe, ShoppingCart, Follow, Favorite
 from users.models import ConstUserRoles, CustomUser
 
 
@@ -47,18 +48,72 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit =  serializers.ReadOnlyField(source = 'ingredient.measurement_unit')
     name =  serializers.ReadOnlyField(source = 'ingredient.name')
     amount = serializers.IntegerField()
+
     class Meta:
         model = IngredientAmount
         fields = [  'id', 'name','measurement_unit', 'amount',]
+
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
     id =  serializers.IntegerField(source='item.id')
     name =  serializers.ReadOnlyField(source = 'item.name')
     image =  Base64ImageField(read_only=True, source = 'item.image')
     cooking_time = serializers.ReadOnlyField(source = 'item.cooking_time')
+
     class Meta:
         model = ShoppingCart
         fields = [  'id', 'name','image', 'cooking_time',]
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    id =  serializers.IntegerField(source='fav_item.id')
+    name =  serializers.ReadOnlyField(source = 'fav_item.name')
+    image =  Base64ImageField(read_only=True, source = 'fav_item.image')
+    cooking_time = serializers.ReadOnlyField(source = 'fav_item.cooking_time')
+
+    class Meta:
+        model = Favorite
+        fields = [  'id', 'name','image', 'cooking_time',]
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    email =  serializers.ReadOnlyField(source = 'author.email')
+    id =  serializers.ReadOnlyField(source='author.id')
+    username = serializers.ReadOnlyField(source='author.username')
+    first_name = serializers.ReadOnlyField(source='author.first_name')
+    last_name = serializers.ReadOnlyField(source='author.last_name')
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Follow
+        fields = (
+            'email',
+            'id','username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+            )
+    
+    def get_is_subscribed(self,obj):
+        author = obj.author
+        user = obj.user
+        if Follow.objects.filter(author=user, user=author).exists():
+            return True
+        return False
+
+    def get_recipes(self,obj):
+        author = obj.author
+        recepts_follow = Recipe.objects.filter(author=author)
+        return RecipeSerializer(recepts_follow,many=True).data
+    
+    def get_recipes_count(self,obj):
+        author = obj.author
+        count = Recipe.objects.filter(author=author).count()
+        return count
 
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagRecipeSerializer(source='tagrecipe_set', many=True, required=False)
@@ -90,3 +145,4 @@ class RecipeSerializer(serializers.ModelSerializer):
             IngredientAmount.objects.create(
                 ingredient=current_ingredient, recipe=recipe, amount=ingredient.get('amount'))
         return recipe 
+        

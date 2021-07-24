@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from  foodgram import settings
 
 from users.models import CustomUser
 
@@ -127,3 +128,27 @@ class ShoppingCart(models.Model):
         on_delete=models.CASCADE,
         blank=True,
         )
+
+class Favorite(models.Model):
+    fav_user = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.CASCADE,
+        blank=False
+    )
+    fav_item = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        blank=True,
+        )
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="follower"
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="following"
+    )

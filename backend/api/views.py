@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from recipes.models import Recipe, Ingredient, Tag, ShoppingCart
+from recipes.models import Recipe, Ingredient, Tag, ShoppingCart, Follow, Favorite
 from users.models import CustomUser
 from rest_framework import viewsets
 
@@ -15,7 +15,15 @@ from .utils import generate_confirmation_code, send_mail_to_user
 from .viewset import CatGenViewSet
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorOrAdmin, IsSuperuser)
-from .serializers import RecipeSerializer, IngredientSerializer, UserSerializer, TagSerializer, ShoppingCartSerializer
+from .serializers import (
+    RecipeSerializer,
+    IngredientSerializer,
+    UserSerializer,
+    TagSerializer,
+    ShoppingCartSerializer,
+    FollowSerializer,
+    FavoriteSerializer
+)
 
 from rest_framework.serializers import ValidationError
 
@@ -134,4 +142,58 @@ class ShoppingCartViewSet(views.APIView):
         follow = ShoppingCart.objects.get(item=item, owner=user)
         follow.delete()
         return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteViewSet(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = FavoriteSerializer
+    pagination_class = None
+    def get(self, request, recipe_id):
+        fav_item = get_object_or_404(Recipe, pk=recipe_id)
+        fav_user = self.request.user
+        if Favorite.objects.filter(fav_item=fav_item, fav_user=fav_user).exists():
+            return Response(
+                'Вы уже добавили в избранное',
+                status=status.HTTP_400_BAD_REQUEST)
+        favorite = Favorite.objects.create(fav_item=fav_item, fav_user=fav_user)
+        serializer = FavoriteSerializer(favorite)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+    def delete(self, request, recipe_id):
+        fav_user = request.user
+        fav_item = get_object_or_404(Recipe, pk=recipe_id)
+        follow = Favorite.objects.get(fav_item=fav_item, fav_user=fav_user)
+        follow.delete()
+        return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
+
+
+class SubscribeView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    def get(self, request, user_id):
+        user = request.user
+        author = get_object_or_404(CustomUser, id=user_id)
+        if Follow.objects.filter(user=user, author=author).exists():
+            return Response(
+                'Вы уже подписаны',
+                status=status.HTTP_400_BAD_REQUEST)
+        follow = Follow.objects.create(user=user, author=author)
+        serializer = FollowSerializer(follow)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def delete(self, request, user_id):
+        user = request.user
+        author = get_object_or_404(CustomUser, id=user_id)
+        follow = Follow.objects.get(user=user, author=author)
+        follow.delete()
+        return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
+
+class SubscribeListViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthorOrAdmin,)
+    queryset = Follow.objects.all()
+    serializer_class = IngredientSerializer
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+        data['tags'] = [{'id': idx} for idx in data['tags']]
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=self.request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
