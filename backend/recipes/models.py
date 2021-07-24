@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 from users.models import CustomUser
@@ -32,7 +33,8 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(
         Tag,
         blank=True,
-        related_name='recipe',
+        through='TagRecipe',
+        related_name='recipes',
         verbose_name='Теги',
     )
     author = models.ForeignKey(
@@ -46,7 +48,7 @@ class Recipe(models.Model):
         Ingredient,
         blank=True,
         through='IngredientAmount',
-        related_name='recipe',
+        related_name='recipes',
         verbose_name='Ингредиенты',
     )
     is_favorited = models.BooleanField(
@@ -101,3 +103,27 @@ class IngredientAmount(models.Model):
     amount = models.PositiveSmallIntegerField(
         blank=False
     )
+
+class TagRecipe(models.Model):
+    tag = models.ForeignKey(
+        Tag, 
+        on_delete=models.CASCADE,
+        blank=False
+    )
+    recipe = models.ForeignKey(
+        Recipe, 
+        on_delete=models.CASCADE,
+        blank=False
+    )
+
+class ShoppingCart(models.Model):
+    owner = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.CASCADE,
+        blank=False
+    )
+    item = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        blank=True,
+        )

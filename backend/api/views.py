@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from recipes.models import Recipe, Ingredient, Tag
+from recipes.models import Recipe, Ingredient, Tag, ShoppingCart
 from users.models import CustomUser
 from rest_framework import viewsets
 
@@ -15,7 +15,9 @@ from .utils import generate_confirmation_code, send_mail_to_user
 from .viewset import CatGenViewSet
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorOrAdmin, IsSuperuser)
-from .serializers import RecipeSerializer, IngredientSerializer, UserSerializer, TagSerializer
+from .serializers import RecipeSerializer, IngredientSerializer, UserSerializer, TagSerializer, ShoppingCartSerializer
+
+from rest_framework.serializers import ValidationError
 
 
 BASE_USERNAME = 'User'
@@ -89,6 +91,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrAdmin,)
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        data['tags'] = [{'id': idx} for idx in data['tags']]
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=self.request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    # def perform_create(self, serializer):
+    #     serializer.save(author=self.request.user)
 
 class IngredientViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrAdmin,)
@@ -101,3 +112,26 @@ class TagViewSet(viewsets.ModelViewSet):
     pagination_class = None
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+class ShoppingCartViewSet(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = TagSerializer
+    pagination_class = None
+    def get(self, request, recipe_id):
+        item = get_object_or_404(Recipe, pk=recipe_id)
+        owner = self.request.user
+        if ShoppingCart.objects.filter(item=item, owner=owner).exists():
+            return Response(
+                'Вы уже добавили в список покупок',
+                status=status.HTTP_400_BAD_REQUEST)
+        shopcart = ShoppingCart.objects.create(item=item, owner=owner)
+        serializer = ShoppingCartSerializer(shopcart)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def delete(self, request, recipe_id):
+        user = request.user
+        item = get_object_or_404(Recipe, pk=recipe_id)
+        follow = ShoppingCart.objects.get(item=item, owner=user)
+        follow.delete()
+        return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
+    
