@@ -15,6 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'username',
+            'id',
             'email',)
         model = CustomUser
         extra_kwargs = {
@@ -115,6 +116,33 @@ class FollowSerializer(serializers.ModelSerializer):
         count = Recipe.objects.filter(author=author).count()
         return count
 
+
+class ListRecipeSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+    tags = TagRecipeSerializer(source='tagrecipe_set', many=True, required=False)
+    ingredients = RecipeIngredientSerializer(source = 'ingredientamount_set', many=True, required=False)
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = '__all__'
+
+    def get_is_favorited(self,obj):
+        fav_user = self.context.get("user_id")   
+        fav_item = obj.id
+        if Favorite.objects.filter(fav_user=fav_user, fav_item=fav_item).exists():
+            return True
+        return False
+    
+    def get_is_in_shopping_cart(self,obj):
+        owner = self.context.get("user_id")   
+        item = obj.id
+        if ShoppingCart.objects.filter(owner=owner, item=item).exists():
+            return True
+        return False
+
+
 class RecipeSerializer(serializers.ModelSerializer):
     tags = TagRecipeSerializer(source='tagrecipe_set', many=True, required=False)
     author = UserSerializer(read_only=True)
@@ -122,6 +150,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     image = Base64ImageField(
         max_length=None, use_url=True,
     )
+    
     class Meta:
         fields = (
             'id', 'tags', 'author', 'ingredients',

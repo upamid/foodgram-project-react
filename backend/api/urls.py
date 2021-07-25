@@ -9,7 +9,8 @@ from .views import (
     TagViewSet,
     ShoppingCartViewSet,
     SubscribeView,
-    FavoriteViewSet
+    FavoriteViewSet,
+    SubscribeListViewSet
     )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -23,6 +24,8 @@ v1_router.register('users', UsersViewSet)
 v1_router.register('recipes', RecipeViewSet, basename='recipes')
 v1_router.register('ingredients', IngredientViewSet, basename='ingredients')
 v1_router.register('tags', TagViewSet, basename='tag')
+
+
 # v1_router.register(r'recipes/(?P<recipe_id>\d+)/shopping_cart',
 #                    ShoppingCartViewSet,
 #                    basename='shopping_cart')
@@ -36,6 +39,7 @@ urlpatterns = [
     # path('users/', RegisterView.as_view()),
     # Djoser создаст набор необходимых эндпоинтов.
     # базовые, для управления пользователями в Django:
+    path('users/subscriptions/', SubscribeListViewSet.as_view({'get': 'list'}), name='subscriptions'),
     path('', include('djoser.urls')),
     # JWT-эндпоинты, для управления JWT-токенами:
     path('auth/', include('djoser.urls.authtoken')),

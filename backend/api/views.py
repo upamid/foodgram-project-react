@@ -6,11 +6,13 @@ from rest_framework import (filters, permissions, serializers, status, views,
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.pagination import PageNumberPagination
 
 from recipes.models import Recipe, Ingredient, Tag, ShoppingCart, Follow, Favorite
 from users.models import CustomUser
 from rest_framework import viewsets
 
+from .filterset import RecipeFilter
 from .utils import generate_confirmation_code, send_mail_to_user
 from .viewset import CatGenViewSet
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
@@ -22,7 +24,8 @@ from .serializers import (
     TagSerializer,
     ShoppingCartSerializer,
     FollowSerializer,
-    FavoriteSerializer
+    FavoriteSerializer,
+    ListRecipeSerializer
 )
 
 from rest_framework.serializers import ValidationError
@@ -98,11 +101,42 @@ class UsersViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrAdmin,)
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
+    serializer_class = ListRecipeSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = RecipeFilter
+
+    def get_serializer_context(self):
+        context = super(RecipeViewSet, self).get_serializer_context()
+        context.update({"user_id": self.request.user.id})
+        return context
+
+
+    # def list(self, request, *args, **kwargs):
+    #     queryset = Recipe.objects.all()
+    #     tags = self.request.query_params.get('tags').split(',')
+    #     if tags is not None:
+    #         tags_id = Tag.objects.filter(name=tags)
+    #         queryset = queryset.filter(tags=tags_id)
+
+    #     page = self.paginate_queryset(queryset)
+    #     serializer = ListRecipeSerializer(page, context={"user_id": self.request.user.id}, many=True)
+    #     return self.get_paginated_response(serializer.data)
+
+    # def list(self, request, *args, **kwargs):
+    #     recipe = Recipe.objects.all()
+    #     page = self.paginate_queryset(recipe)
+    #     serializer = ListRecipeSerializer(page, context={"user_id": self.request.user.id}, many=True)
+    #     return self.get_paginated_response(serializer.data)
+
+    # def retrieve(self, request, pk=None):
+    #     recipe = get_object_or_404(Recipe, pk=pk)
+    #     serializer = ListRecipeSerializer(recipe, context={"user_id": self.request.user.id})
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+        
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         data['tags'] = [{'id': idx} for idx in data['tags']]
-        serializer = self.get_serializer(data=data)
+        serializer = RecipeSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save(author=self.request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -186,14 +220,14 @@ class SubscribeView(views.APIView):
         follow.delete()
         return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
 
-class SubscribeListViewSet(viewsets.ModelViewSet):
+class SubscribeListViewSet(viewsets.ModelViewSet, PageNumberPagination):
     permission_classes = (IsAuthorOrAdmin,)
     queryset = Follow.objects.all()
-    serializer_class = IngredientSerializer
-    def retrieve(self, request, *args, **kwargs):
-        user = request.user
-        data['tags'] = [{'id': idx} for idx in data['tags']]
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(author=self.request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    serializer_class = FollowSerializer
+    def list(self, request, *args, **kwargs):
+        user = self.request.user
+        subscriptions = Follow.objects.filter(user=user)
+        page = self.paginate_queryset(subscriptions)
+        serializer = FollowSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+        # return Response(serializer.data, status=status.HTTP_200_OK)

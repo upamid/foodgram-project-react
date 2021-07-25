@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
@@ -154,6 +155,14 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'REQUIRED_FIELDS': 'users.CustomUser.REQUIRED_FIELDS',
     'HIDE_USERS': False,
+    'PERMISSIONS': {
+        'user': [
+            'djoser.permissions.CurrentUserOrAdminOrReadOnly'
+        ],
+        'user_list': [
+            'rest_framework.permissions.AllowAny'
+        ],
+    },
 }
 
 AUTH_USER_MODEL = 'users.CustomUser'
