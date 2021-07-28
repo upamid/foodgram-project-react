@@ -1,5 +1,16 @@
 from django.db.models import Avg, Max
 from django.shortcuts import get_object_or_404
+from django.http import FileResponse
+from django.contrib.auth.decorators import login_required 
+import io
+import reportlab
+from django.conf import settings
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (filters, permissions, serializers, status, views,
                             viewsets)
@@ -8,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.pagination import PageNumberPagination
 
-from recipes.models import Recipe, Ingredient, Tag, ShoppingCart, Follow, Favorite
+from recipes.models import Recipe, Ingredient, Tag, ShoppingCart, Follow, Favorite, IngredientAmount
 from users.models import CustomUser
 from rest_framework import viewsets
 
@@ -110,28 +121,42 @@ class RecipeViewSet(viewsets.ModelViewSet):
         context.update({"user_id": self.request.user.id})
         return context
 
+    @action(
+        detail=False,
+        permission_classes=(permissions.IsAuthenticated,),
+        methods=['get', ])
+    def download_shopping_cart(self, request):
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf, pagesize=letter, bottomup=0)
+        pdfmetrics.registerFont(TTFont('FreeSans', settings.STATIC_ROOT+'/FreeSans.ttf'))
+        textob = c.beginText()
+        textob.setTextOrigin(inch, inch)
+        textob.setFont("FreeSans", 14)
 
-    # def list(self, request, *args, **kwargs):
-    #     queryset = Recipe.objects.all()
-    #     tags = self.request.query_params.get('tags').split(',')
-    #     if tags is not None:
-    #         tags_id = Tag.objects.filter(name=tags)
-    #         queryset = queryset.filter(tags=tags_id)
+        user = request.user
+        recipes_id = ShoppingCart.objects.filter(owner=user).values('item')
+        ingredients_id = Recipe.objects.filter(id__in=recipes_id).values('ingredients')
+        ingredients = Ingredient.objects.filter(id__in=ingredients_id)
+        amounts = IngredientAmount.objects.filter(
+                ingredient__in=ingredients_id, recipe__in=recipes_id).values('amount')
 
-    #     page = self.paginate_queryset(queryset)
-    #     serializer = ListRecipeSerializer(page, context={"user_id": self.request.user.id}, many=True)
-    #     return self.get_paginated_response(serializer.data)
+        lines = []
 
-    # def list(self, request, *args, **kwargs):
-    #     recipe = Recipe.objects.all()
-    #     page = self.paginate_queryset(recipe)
-    #     serializer = ListRecipeSerializer(page, context={"user_id": self.request.user.id}, many=True)
-    #     return self.get_paginated_response(serializer.data)
+        for ingredient in ingredients:
+            lines.append(ingredient)
+            # lines.append(ingredient.measurement_unit)
+            lines.append(amounts)
+            lines.append(" ")
 
-    # def retrieve(self, request, pk=None):
-    #     recipe = get_object_or_404(Recipe, pk=pk)
-    #     serializer = ListRecipeSerializer(recipe, context={"user_id": self.request.user.id})
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
+        for line in lines:
+            textob.textLine(line)
+
+        c.drawText(textob)    
+        c.showPage()
+        c.save()
+        buf.seek(0)
+
+        return FileResponse(buf, as_attachment=True, filename='shop.pdf')
         
     def create(self, request, *args, **kwargs):
         data = request.data.copy()

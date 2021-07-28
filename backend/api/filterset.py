@@ -35,5 +35,5 @@ class RecipeFilter(rest_framework.FilterSet):
 
     def filter_is_in_shopping_cart(self, queryset, name, tags):
         user = self.request.user
-        fav_recipes = ShoppingCart.objects.filter(owner=user).values('item')
-        return queryset.filter(id__in=fav_recipes)
+        recipes = ShoppingCart.objects.filter(owner=user).values('item')
+        return queryset.filter(id__in=recipes)

@@ -10,7 +10,7 @@ from .views import (
     ShoppingCartViewSet,
     SubscribeView,
     FavoriteViewSet,
-    SubscribeListViewSet
+    SubscribeListViewSet,
     )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
