@@ -1,4 +1,4 @@
-from django.db.models import Avg, Max
+from django.db.models import Avg, Max, Sum
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
 from django.contrib.auth.decorators import login_required 
@@ -137,16 +137,33 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipes_id = ShoppingCart.objects.filter(owner=user).values('item')
         ingredients_id = Recipe.objects.filter(id__in=recipes_id).values('ingredients')
         ingredients = Ingredient.objects.filter(id__in=ingredients_id)
-        amounts = IngredientAmount.objects.filter(
-                ingredient__in=ingredients_id, recipe__in=recipes_id).values('amount')
+        # amounts = IngredientAmount.objects.filter(
+        #         ingredient__in=ingredients_id, recipe__in=recipes_id).values('amount')
+        # amounts = IngredientAmount.objects.filter(ingredient__in=ingredients_id, recipe__in=recipes_id).values('ingredient').annotate(total_amount=Sum('amount'))
 
         lines = []
 
         for ingredient in ingredients:
-            lines.append(ingredient)
-            # lines.append(ingredient.measurement_unit)
-            lines.append(amounts)
+            amount = IngredientAmount.objects.filter(ingredient=ingredient, recipe__in=recipes_id).aggregate(total_amount=Sum('amount'))["total_amount"]
+
+            lines.append(ingredient.name)
+            lines.append(str(amount))
             lines.append(" ")
+            lines.append(f'{ingredient.name} ({ingredient.measurement_unit}) – {str(amount)}')
+        # for amount in amounts:
+        #     lines.append(str(amount['total_amount']))
+        # # lines.append(ingredients.name)
+        # # lines.append(str(amount['total_amount']))
+
+        # for ingredient in ingredients:
+        #     lines.append(ingredient.name)
+        # #     # lines.append(ingredient.measurement_unit)
+        # #     lines.append(amount)
+        # #     lines.append(" ")
+
+        # for i in range(len(ingredients)):
+        #     lines.append(ingredients[i].name)
+        #     lines.append(str(amounts[i]['total_amount']))
 
         for line in lines:
             textob.textLine(line)
