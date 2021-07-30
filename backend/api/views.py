@@ -137,9 +137,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipes_id = ShoppingCart.objects.filter(owner=user).values('item')
         ingredients_id = Recipe.objects.filter(id__in=recipes_id).values('ingredients')
         ingredients = Ingredient.objects.filter(id__in=ingredients_id)
-        # amounts = IngredientAmount.objects.filter(
-        #         ingredient__in=ingredients_id, recipe__in=recipes_id).values('amount')
-        # amounts = IngredientAmount.objects.filter(ingredient__in=ingredients_id, recipe__in=recipes_id).values('ingredient').annotate(total_amount=Sum('amount'))
 
         lines = []
 
@@ -150,20 +147,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             lines.append(str(amount))
             lines.append(" ")
             lines.append(f'{ingredient.name} ({ingredient.measurement_unit}) – {str(amount)}')
-        # for amount in amounts:
-        #     lines.append(str(amount['total_amount']))
-        # # lines.append(ingredients.name)
-        # # lines.append(str(amount['total_amount']))
-
-        # for ingredient in ingredients:
-        #     lines.append(ingredient.name)
-        # #     # lines.append(ingredient.measurement_unit)
-        # #     lines.append(amount)
-        # #     lines.append(" ")
-
-        # for i in range(len(ingredients)):
-        #     lines.append(ingredients[i].name)
-        #     lines.append(str(amounts[i]['total_amount']))
 
         for line in lines:
             textob.textLine(line)
@@ -182,8 +165,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(author=self.request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    # def perform_create(self, serializer):
-    #     serializer.save(author=self.request.user)
+
 
 class IngredientViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrAdmin,)

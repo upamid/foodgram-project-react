@@ -12,7 +12,9 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = (
         'username',
         'email')
-    list_filter = ('username',)
+    list_filter = (
+        'username',
+        'email')
 
 
 admin.site.register(CustomUser, UserAdmin)
