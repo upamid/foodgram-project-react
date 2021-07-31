@@ -1,8 +1,7 @@
+import django_filters
 from django.db.models import Q
 from django_filters import rest_framework
-import django_filters
-
-from recipes.models import Recipe, Tag, Favorite, ShoppingCart
+from recipes.models import Favorite, Recipe, ShoppingCart, Tag
 
 
 class RecipeFilter(rest_framework.FilterSet):

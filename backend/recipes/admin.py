@@ -2,8 +2,6 @@ from django.contrib import admin
 
 from .models import Ingredient, Recipe, Tag
 
-# admin.site.register(Ingredient)
-# admin.site.register(Recipe)
 admin.site.register(Tag)
 
 
@@ -26,6 +24,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     recipe_favorite_count.short_description = "Число добавлений в избранное"
 
+
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
         'name',
@@ -33,6 +32,7 @@ class IngredientAdmin(admin.ModelAdmin):
         )
     list_filter = (
         'name',)
+
 
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Ingredient, IngredientAdmin)

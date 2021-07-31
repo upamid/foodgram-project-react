@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
-from  foodgram import settings
-
+from foodgram import settings
 from users.models import CustomUser
+
 
 class Tag(models.Model):
     name = models.CharField(
@@ -11,9 +11,13 @@ class Tag(models.Model):
         max_length=200,
         help_text='Укажите название ингредиента'
     )
-    color = models.CharField(verbose_name=(u'Color'), max_length=7,
-                         help_text=(u'HEX color, as #RRGGBB'))
+    color = models.CharField(
+        verbose_name=(u'Color'),
+        max_length=7,
+        help_text=(u'HEX color, as #RRGGBB')
+        )
     slug = models.SlugField(max_length=50, unique=True)
+
 
 class Ingredient(models.Model):
     name = models.CharField(
@@ -28,6 +32,7 @@ class Ingredient(models.Model):
         max_length=200,
         help_text='Укажите единицу измерения'
     )
+
 
 class Recipe(models.Model):
     id = models.AutoField(primary_key=True, db_index=True)
@@ -59,7 +64,7 @@ class Recipe(models.Model):
         help_text='Напишите название рецепта'
     )
     image = models.ImageField(
-        upload_to='image/', 
+        upload_to='image/',
         null=False
     )
     text = models.TextField(
@@ -77,14 +82,15 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
         ordering = ['id']
 
+
 class IngredientAmount(models.Model):
     ingredient = models.ForeignKey(
-        Ingredient, 
+        Ingredient,
         on_delete=models.CASCADE,
         blank=False
     )
     recipe = models.ForeignKey(
-        Recipe, 
+        Recipe,
         on_delete=models.CASCADE,
         blank=False
     )
@@ -92,21 +98,23 @@ class IngredientAmount(models.Model):
         blank=False
     )
 
+
 class TagRecipe(models.Model):
     tag = models.ForeignKey(
-        Tag, 
+        Tag,
         on_delete=models.CASCADE,
         blank=False
     )
     recipe = models.ForeignKey(
-        Recipe, 
+        Recipe,
         on_delete=models.CASCADE,
         blank=False
     )
 
+
 class ShoppingCart(models.Model):
     owner = models.ForeignKey(
-        CustomUser, 
+        CustomUser,
         on_delete=models.CASCADE,
         blank=False
     )
@@ -116,9 +124,10 @@ class ShoppingCart(models.Model):
         blank=True,
         )
 
+
 class Favorite(models.Model):
     fav_user = models.ForeignKey(
-        CustomUser, 
+        CustomUser,
         on_delete=models.CASCADE,
         blank=False
     )
@@ -127,6 +136,7 @@ class Favorite(models.Model):
         on_delete=models.CASCADE,
         blank=True,
         )
+
 
 class Follow(models.Model):
     user = models.ForeignKey(
