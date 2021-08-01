@@ -15,7 +15,6 @@ class Tag(models.Model):
         verbose_name=(u'Color'),
         max_length=7,
         help_text=(u'HEX color, as #RRGGBB'),
-        verbose_name='Цвет ингредиента',
         )
     slug = models.SlugField(max_length=50, unique=True)
 

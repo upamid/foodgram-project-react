@@ -1,12 +1,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (TokenObtainPairView,
-                                            TokenObtainSlidingView,
-                                            TokenRefreshView)
 
 from .views import (FavoriteViewSet, IngredientViewSet, RecipeViewSet,
-                    RegisterView, ShoppingCartViewSet, SubscribeListViewSet,
-                    SubscribeView, TagViewSet, TokenView, UsersViewSet)
+                    ShoppingCartViewSet, SubscribeListViewSet,
+                    SubscribeView, TagViewSet, UsersViewSet)
 
 v1_router = DefaultRouter()
 v1_router.register('users', UsersViewSet)

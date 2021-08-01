@@ -1,9 +1,7 @@
 import io
 
-import reportlab
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Max, Sum
+from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,17 +12,16 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from rest_framework import (filters, permissions, serializers, status, views,
+from rest_framework import (permissions, status, views,
                             viewsets)
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from rest_framework.serializers import ValidationError
-from rest_framework_simplejwt.tokens import RefreshToken
+
 from users.models import CustomUser
 
 from .filterset import RecipeFilter
-from .permissions import (IsAdmin, IsAdminOrReadOnly, IsAuthorOrAdmin,
+from .permissions import (IsAdmin, IsAuthorOrAdmin,
                           IsSuperuser)
 from .serializers import (FavoriteCreateSerializer, FavoriteSerializer,
                           FollowCreateSerializer, FollowSerializer,
@@ -32,48 +29,8 @@ from .serializers import (FavoriteCreateSerializer, FavoriteSerializer,
                           RecipeSerializer, ShoppingCartCreateSerializer,
                           ShoppingCartSerializer, TagSerializer,
                           UserSerializer)
-from .utils import generate_confirmation_code, send_mail_to_user
-from .viewset import CatGenViewSet
 
 BASE_USERNAME = 'User'
-
-
-class RegisterView(views.APIView):
-    permission_classes = (permissions.AllowAny,)
-
-    def post(self, request):
-        email = request.data.get('email')
-        user = CustomUser.objects.filter(email=email)
-        if user.exists():
-            confirmation_code = user[0].confirmation_code
-        else:
-            confirmation_code = generate_confirmation_code()
-            max_id = CustomUser.objects.aggregate(Max('id'))['id__max'] + 1
-            data = {
-                'email': email,
-                'confirmation_code': confirmation_code,
-                'username': f'{BASE_USERNAME}{max_id}'}
-            serializer = UserSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        send_mail_to_user(email, confirmation_code)
-        return Response({'email': email})
-
-
-class TokenView(views.APIView):
-    permission_classes = (permissions.AllowAny,)
-
-    def get_token(self, user):
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
-
-    def post(self, request):
-        user = get_object_or_404(CustomUser, email=request.data.get('email'))
-        if user.confirmation_code != request.data.get('confirmation_code'):
-            response = {'confirmation_code': 'Неверный код для данного email'}
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
-        response = {'token': self.get_token(user)}
-        return Response(response, status=status.HTTP_200_OK)
 
 
 class UsersViewSet(viewsets.ModelViewSet):
