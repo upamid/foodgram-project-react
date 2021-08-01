@@ -1,4 +1,5 @@
 import io
+from typing import OrderedDict
 
 import reportlab
 from django.conf import settings
@@ -26,10 +27,12 @@ from users.models import CustomUser
 from .filterset import RecipeFilter
 from .permissions import (IsAdmin, IsAdminOrReadOnly, IsAuthorOrAdmin,
                           IsSuperuser)
-from .serializers import (FavoriteSerializer, FollowSerializer,
+from .serializers import (FavoriteCreateSerializer, 
+                        FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, ListRecipeSerializer,
-                          RecipeSerializer, ShoppingCartSerializer,
-                          TagSerializer, UserSerializer)
+                          RecipeSerializer, ShoppingCartCreateSerializer,
+                          ShoppingCartSerializer, TagSerializer,
+                          UserSerializer)
 from .utils import generate_confirmation_code, send_mail_to_user
 from .viewset import CatGenViewSet
 
@@ -42,7 +45,7 @@ class RegisterView(views.APIView):
     def post(self, request):
         email = request.data.get('email')
         user = CustomUser.objects.filter(email=email)
-        if len(user) > 0:
+        if user.exists():
             confirmation_code = user[0].confirmation_code
         else:
             confirmation_code = generate_confirmation_code()
@@ -109,7 +112,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_class = RecipeFilter
 
     def get_serializer_context(self):
-        context = super(RecipeViewSet, self).get_serializer_context()
+        context = super().get_serializer_context()
         context.update({"user_id": self.request.user.id})
         return context
 
@@ -204,18 +207,17 @@ class ShoppingCartViewSet(views.APIView):
     def get(self, request, recipe_id):
         item = get_object_or_404(Recipe, pk=recipe_id)
         owner = self.request.user
-        if ShoppingCart.objects.filter(item=item, owner=owner).exists():
-            return Response(
-                'Вы уже добавили в список покупок',
-                status=status.HTTP_400_BAD_REQUEST)
-        shopcart = ShoppingCart.objects.create(item=item, owner=owner)
+        serializer = ShoppingCartCreateSerializer(data={'item': recipe_id, 'owner': owner.id})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(owner=self.request.user)
+        shopcart = get_object_or_404(ShoppingCart, item=item, owner=owner)
         serializer = ShoppingCartSerializer(shopcart)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, recipe_id):
         user = request.user
         item = get_object_or_404(Recipe, pk=recipe_id)
-        follow = ShoppingCart.objects.get(item=item, owner=user)
+        follow = get_object_or_404(ShoppingCart, item=item, owner=user)
         follow.delete()
         return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
 
@@ -228,18 +230,11 @@ class FavoriteViewSet(views.APIView):
     def get(self, request, recipe_id):
         fav_item = get_object_or_404(Recipe, pk=recipe_id)
         fav_user = self.request.user
-        if Favorite.objects.filter(
-            fav_item=fav_item,
-            fav_user=fav_user
-                ).exists():
-            return Response(
-                'Вы уже добавили в избранное',
-                status=status.HTTP_400_BAD_REQUEST)
-        favorite = Favorite.objects.create(
-            fav_item=fav_item,
-            fav_user=fav_user
-            )
-        serializer = FavoriteSerializer(favorite)
+        serializer = FavoriteCreateSerializer(data={'fav_item': recipe_id, 'fav_user': fav_user.id})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(fav_user=self.request.user)
+        shopcart = get_object_or_404(Favorite, fav_item=fav_item, fav_user=fav_user)
+        serializer = ShoppingCartSerializer(shopcart)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, recipe_id):
