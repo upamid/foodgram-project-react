@@ -1,5 +1,4 @@
 import io
-from typing import OrderedDict
 
 import reportlab
 from django.conf import settings
@@ -27,8 +26,8 @@ from users.models import CustomUser
 from .filterset import RecipeFilter
 from .permissions import (IsAdmin, IsAdminOrReadOnly, IsAuthorOrAdmin,
                           IsSuperuser)
-from .serializers import (FavoriteCreateSerializer, 
-                        FavoriteSerializer, FollowSerializer,
+from .serializers import (FavoriteCreateSerializer, FavoriteSerializer,
+                          FollowCreateSerializer, FollowSerializer,
                           IngredientSerializer, ListRecipeSerializer,
                           RecipeSerializer, ShoppingCartCreateSerializer,
                           ShoppingCartSerializer, TagSerializer,
@@ -207,7 +206,9 @@ class ShoppingCartViewSet(views.APIView):
     def get(self, request, recipe_id):
         item = get_object_or_404(Recipe, pk=recipe_id)
         owner = self.request.user
-        serializer = ShoppingCartCreateSerializer(data={'item': recipe_id, 'owner': owner.id})
+        serializer = ShoppingCartCreateSerializer(
+            data={'item': recipe_id, 'owner': owner.id}
+            )
         serializer.is_valid(raise_exception=True)
         serializer.save(owner=self.request.user)
         shopcart = get_object_or_404(ShoppingCart, item=item, owner=owner)
@@ -230,17 +231,27 @@ class FavoriteViewSet(views.APIView):
     def get(self, request, recipe_id):
         fav_item = get_object_or_404(Recipe, pk=recipe_id)
         fav_user = self.request.user
-        serializer = FavoriteCreateSerializer(data={'fav_item': recipe_id, 'fav_user': fav_user.id})
+        serializer = FavoriteCreateSerializer(
+            data={'fav_item': recipe_id, 'fav_user': fav_user.id}
+            )
         serializer.is_valid(raise_exception=True)
         serializer.save(fav_user=self.request.user)
-        shopcart = get_object_or_404(Favorite, fav_item=fav_item, fav_user=fav_user)
-        serializer = ShoppingCartSerializer(shopcart)
+        shopcart = get_object_or_404(
+            Favorite,
+            fav_item=fav_item,
+            fav_user=fav_user
+            )
+        serializer = FavoriteSerializer(shopcart)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, recipe_id):
         fav_user = request.user
         fav_item = get_object_or_404(Recipe, pk=recipe_id)
-        follow = Favorite.objects.get(fav_item=fav_item, fav_user=fav_user)
+        follow = get_object_or_404(
+            Favorite,
+            fav_item=fav_item,
+            fav_user=fav_user
+            )
         follow.delete()
         return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
 
@@ -249,20 +260,25 @@ class SubscribeView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, user_id):
-        user = request.user
+        user = self.request.user
         author = get_object_or_404(CustomUser, id=user_id)
-        if Follow.objects.filter(user=user, author=author).exists():
-            return Response(
-                'Вы уже подписаны',
-                status=status.HTTP_400_BAD_REQUEST)
-        follow = Follow.objects.create(user=user, author=author)
+        serializer = FollowCreateSerializer(
+            data={'user': user.id, 'author': user_id}
+            )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=self.request.user)
+        follow = get_object_or_404(
+            Follow,
+            user=user,
+            author=author
+            )
         serializer = FollowSerializer(follow)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, user_id):
         user = request.user
         author = get_object_or_404(CustomUser, id=user_id)
-        follow = Follow.objects.get(user=user, author=author)
+        follow = get_object_or_404(Follow, user=user, author=author)
         follow.delete()
         return Response('Удалено', status=status.HTTP_204_NO_CONTENT)
 
