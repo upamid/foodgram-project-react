@@ -162,3 +162,5 @@ AUTH_USER_MODEL = 'users.CustomUser'
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 
 EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+
+FIXTURE_DIRS = os.path.join(BASE_DIR, "data")

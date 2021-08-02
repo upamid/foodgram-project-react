@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from foodgram import settings
+
 from users.models import CustomUser
 
 
@@ -16,7 +17,11 @@ class Tag(models.Model):
         max_length=7,
         help_text=(u'HEX color, as #RRGGBB'),
         )
-    slug = models.SlugField(max_length=50, unique=True)
+    slug = models.SlugField(
+        max_length=50,
+        unique=True,
+        verbose_name='Slug'
+        )
 
     class Meta:
         verbose_name = 'Тег',
