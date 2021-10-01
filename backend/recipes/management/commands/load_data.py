@@ -19,6 +19,6 @@ class Command(BaseCommand):
         my_json_obj = json.load(f)
         for title in my_json_obj:
             Ingredient.objects.create(
-                name=title['name'],
-                measurement_unit=title['measurement_unit']
+                name = title['name'],
+                measurement_unit = title['measurement_unit']
                 )
