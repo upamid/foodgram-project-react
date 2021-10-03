@@ -136,8 +136,8 @@ class RecipeSerializer(serializers.ModelSerializer):
                 tag=current_tag, recipe=recipe)
         flipped = []
         for ingredient in ingredients:
-            if ingredient.get('name') not in flipped:
-                flipped.append(ingredient.get('name'))
+            if ingredient not in flipped:
+                flipped.append(ingredient)
             else:
                 raise serializers.ValidationError(
                     'Ингредиенты не должны повторяться')
