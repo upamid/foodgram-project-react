@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -8,20 +9,23 @@ from recipes.models import (Favorite, Follow, Ingredient, IngredientAmount,
 from users.models import CustomUser
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
+        model = CustomUser
         fields = (
             'first_name',
             'last_name',
             'username',
             'id',
-            'email',)
-        model = CustomUser
+            'email',
+            'is_subscribed',)
         extra_kwargs = {
             'username': {'required': True},
-            'email': {'required': True}}
+            'email': {'required': True},
+            'is_subscribed': {'read_only': True}
+            }
     
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
