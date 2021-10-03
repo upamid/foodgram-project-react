@@ -9,6 +9,7 @@ from users.models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         fields = (
@@ -21,6 +22,12 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'username': {'required': True},
             'email': {'required': True}}
+    
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=request.user, author=obj).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -123,7 +130,16 @@ class RecipeSerializer(serializers.ModelSerializer):
             current_tag = get_object_or_404(Tag, id=tag.get('tag').get('id'))
             TagRecipe.objects.create(
                 tag=current_tag, recipe=recipe)
+        flipped = []
         for ingredient in ingredients:
+            if ingredient.get('name') not in flipped:
+                flipped.append(ingredient.get('name'))
+            else:
+                raise serializers.ValidationError(
+                    'Ингредиенты не должны повторяться')
+            if ingredient.get('amount') < 0:
+                raise serializers.ValidationError(
+                    'Количество ингредиентов должно быть больше нуля')
             current_ingredient = get_object_or_404(
                 Ingredient,
                 id=ingredient.get('ingredient').get('id')

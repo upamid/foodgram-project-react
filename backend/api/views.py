@@ -20,7 +20,8 @@ from recipes.models import (Favorite, Follow, Ingredient, IngredientAmount,
                             Recipe, ShoppingCart, Tag)
 from users.models import CustomUser
 
-from .filterset import RecipeFilter
+from .filterset import IngredientFilter, RecipeFilter
+from .pagination import CustomPagination
 from .permissions import (IsAdmin, IsAuthorOrAdmin,
                           IsSuperuser)
 from .serializers import (FavoriteCreateSerializer, FavoriteSerializer,
@@ -59,6 +60,13 @@ class UsersViewSet(viewsets.ModelViewSet):
                 many=False)
             return Response(serializer.data)
 
+    def retrieve(self, request, pk=None):
+        queryset = CustomUser.objects.all()
+        author = get_object_or_404(queryset, pk=pk)
+        user = self.request.user
+        serializer = UserSerializer(author, user, context={'user_id': request.user.id})
+        return Response(serializer.data)
+
 
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrAdmin,)
@@ -66,6 +74,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = ListRecipeSerializer
     filter_backends = (DjangoFilterBackend,)
     filter_class = RecipeFilter
+    pagination_class = CustomPagination
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -146,6 +155,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     pagination_class = None
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    filter_class = IngredientFilter
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -158,7 +168,7 @@ class TagViewSet(viewsets.ModelViewSet):
 class ShoppingCartViewSet(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = TagSerializer
-    pagination_class = None
+    pagination_class = CustomPagination
 
     def get(self, request, recipe_id):
         item = get_object_or_404(Recipe, pk=recipe_id)

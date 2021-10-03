@@ -155,6 +155,10 @@ DJOSER = {
             'rest_framework.permissions.AllowAny'
         ],
     },
+    'SERIALIZERS': {
+        'current_user': 'api.serializers.UserSerializer',
+        'user': 'api.serializers.UserSerializer',
+    },
 }
 
 AUTH_USER_MODEL = 'users.CustomUser'

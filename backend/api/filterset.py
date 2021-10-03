@@ -1,7 +1,15 @@
 import django_filters
 from django_filters import rest_framework
 
-from recipes.models import Favorite, Recipe, ShoppingCart, Tag
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+
+
+class IngredientFilter(rest_framework.FilterSet):
+    name = django_filters.CharFilter(field_name="name", lookup_expr='startswith')
+
+    class Meta:
+        model = Ingredient
+        fields = ('name', )
 
 
 class RecipeFilter(rest_framework.FilterSet):
