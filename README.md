@@ -69,6 +69,3 @@ Docker
 
 [Проект](http://84.252.143.136/recipes)
 
-Логин: upamid@yandex.ru
-
-Пароль: elektrika
